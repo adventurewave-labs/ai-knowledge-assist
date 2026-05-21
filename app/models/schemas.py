@@ -21,7 +21,7 @@ class IngestResponse(BaseModel):
 
 class QueryRequest(BaseModel):
     question: str
-    top_k: int = 5
+    top_k: int = Field(default=5, gt=0, le=100)
     filters: dict = Field(default_factory=dict)
 
 

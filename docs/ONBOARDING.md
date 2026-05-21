@@ -26,9 +26,19 @@ pip install -r requirements.txt
 cp .env.example .env
 # Edit .env and add your OPENAI_API_KEY
 
-# 5. Start the API server
+# 5. Start the API server (development)
 uvicorn app.main:app --reload --port 8000
 ```
+
+> **Production:** Do not use `--reload`. Run with:
+> ```bash
+> uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+> ```
+> Or via Docker:
+> ```bash
+> docker build -t aria-rag .
+> docker run -p 8000:8000 --env-file .env aria-rag
+> ```
 
 The API is now available at `http://localhost:8000`. Interactive docs at `/docs`.
 

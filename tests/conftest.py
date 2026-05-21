@@ -140,16 +140,20 @@ def test_client(mock_retriever):
     )
 
     mock_pipeline = MagicMock(spec=IngestPipeline)
-    mock_pipeline.ingest_document.return_value = MagicMock(
-        document_id="abc123",
-        chunks_created=3,
-        source="test.md",
-        model_dump=lambda: {
-            "document_id": "abc123",
-            "chunks_created": 3,
-            "source": "test.md",
-        },
-    )
+
+    def _ingest_side_effect(content, source, metadata=None):
+        return MagicMock(
+            document_id="abc123",
+            chunks_created=3,
+            source=source,
+            model_dump=lambda: {
+                "document_id": "abc123",
+                "chunks_created": 3,
+                "source": source,
+            },
+        )
+
+    mock_pipeline.ingest_document.side_effect = _ingest_side_effect
 
     with patch("app.main.VectorStoreRetriever", return_value=mock_retriever), patch(
         "app.main.RAGChain", return_value=mock_chain

@@ -1,9 +1,12 @@
+import logging
 import time
 from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+
+logger = logging.getLogger(__name__)
 
 from app.config import settings
 from app.ingestion.ingest import IngestPipeline
@@ -47,10 +50,10 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=settings.CORS_ORIGINS,
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 
@@ -66,7 +69,8 @@ async def ingest_document(request: IngestRequest) -> IngestResponse:
             metadata=request.metadata,
         )
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        logger.error("Ingest failed for source %r: %s", request.source, exc, exc_info=True)
+        raise HTTPException(status_code=500, detail="Ingestion failed") from exc
 
 
 @app.post("/query", response_model=QueryResponse)
@@ -81,9 +85,11 @@ async def query(request: QueryRequest) -> QueryResponse:
             filters=request.filters if request.filters else None,
         )
     except RuntimeError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
+        logger.error("Query failed (both LLMs exhausted): %s", exc, exc_info=True)
+        raise HTTPException(status_code=502, detail="LLM service unavailable") from exc
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        logger.error("Query failed: %s", exc, exc_info=True)
+        raise HTTPException(status_code=500, detail="Query failed") from exc
 
 
 @app.get("/health", response_model=HealthResponse)

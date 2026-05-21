@@ -181,7 +181,17 @@ class MarkdownParser:
 
         for sentence in sentences:
             sentence_len = len(sentence)
-            if current_len + sentence_len + 1 <= self.chunk_size:
+            if sentence_len > self.chunk_size:
+                if current_parts:
+                    chunks.append(" ".join(current_parts))
+                    current_parts = []
+                    current_len = 0
+                word_chunks = self._split_by_words(sentence)
+                chunks.extend(word_chunks[:-1])
+                if word_chunks:
+                    current_parts = [word_chunks[-1]]
+                    current_len = len(word_chunks[-1])
+            elif current_len + sentence_len + 1 <= self.chunk_size:
                 current_parts.append(sentence)
                 current_len += sentence_len + 1
             else:
@@ -193,4 +203,23 @@ class MarkdownParser:
         if current_parts:
             chunks.append(" ".join(current_parts))
 
+        return chunks if chunks else [text]
+
+    def _split_by_words(self, text: str) -> list[str]:
+        words = text.split()
+        chunks: list[str] = []
+        current_words: list[str] = []
+        current_len = 0
+        for word in words:
+            wlen = len(word)
+            if current_len + wlen + 1 <= self.chunk_size:
+                current_words.append(word)
+                current_len += wlen + 1
+            else:
+                if current_words:
+                    chunks.append(" ".join(current_words))
+                current_words = [word]
+                current_len = wlen
+        if current_words:
+            chunks.append(" ".join(current_words))
         return chunks if chunks else [text]

@@ -87,35 +87,32 @@ def test_fallback_llm_used_on_primary_failure(mock_retriever):
         prompt_instance = MagicMock()
         mock_pt.from_messages.return_value = prompt_instance
 
-        fail_composed = MagicMock()
-        fail_composed.invoke.side_effect = Exception("OpenAI error")
-        success_composed = MagicMock()
-        success_composed.invoke.return_value = "Fallback answer"
+        fail_chain = MagicMock()
+        fail_chain.invoke.side_effect = Exception("OpenAI error")
+        success_chain = MagicMock()
+        success_chain.invoke.return_value = "Fallback answer"
 
-        call_count = [0]
+        or_calls = [0]
 
         def side_effect_or(other):
-            call_count[0] += 1
-            if call_count[0] <= 2:
-                return fail_composed
-            return success_composed
+            or_calls[0] += 1
+            if or_calls[0] <= 1:
+                return fail_chain
+            return success_chain
 
         prompt_instance.__or__ = MagicMock(side_effect=side_effect_or)
-        fail_composed.__or__ = MagicMock(return_value=fail_composed)
-        success_composed.__or__ = MagicMock(return_value=success_composed)
+        fail_chain.__or__ = MagicMock(return_value=fail_chain)
+        success_chain.__or__ = MagicMock(return_value=success_chain)
 
         mock_primary.return_value = MagicMock()
         mock_fallback.return_value = MagicMock()
 
         c = RAGChain(retriever=mock_retriever)
         c.build_chain()
+        resp = c.query(question="Trigger fallback")
 
-        try:
-            c.query(question="Trigger fallback")
-        except Exception:
-            pass
-
-        assert c.fallback_count >= 0
+        assert c.fallback_count == 1
+        assert resp.answer == "Fallback answer"
 
 
 def test_avg_latency_zero_when_no_queries(mock_retriever):

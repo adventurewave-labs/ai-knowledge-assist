@@ -1,3 +1,4 @@
+import logging
 import time
 from typing import Any
 
@@ -5,10 +6,13 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 
+from app.config import settings
 from app.llm.providers import get_fallback_llm, get_primary_llm
 from app.models.schemas import QueryResponse, SourceDoc
 from app.rag.prompts import get_system_prompt
 from app.rag.retriever import VectorStoreRetriever
+
+logger = logging.getLogger(__name__)
 
 
 def _format_docs(docs: list) -> str:
@@ -49,7 +53,7 @@ class RAGChain:
         filters: dict[str, Any] | None = None,
     ) -> QueryResponse:
         start = time.monotonic()
-        model_used = "gpt-4o-mini"
+        model_used = settings.LLM_MODEL
         answer = ""
 
         lc_retriever = self._retriever.get_retriever(top_k=top_k, filters=filters)
@@ -68,9 +72,10 @@ class RAGChain:
             llm = get_primary_llm()
             chain = prompt | llm | StrOutputParser()
             answer = chain.invoke({"context": context, "question": question})
-        except Exception:
+        except Exception as primary_err:
+            logger.warning("Primary LLM failed, trying fallback: %s", primary_err)
             try:
-                model_used = "gemini-1.5-flash"
+                model_used = settings.FALLBACK_LLM_MODEL
                 self._fallback_count += 1
                 llm = get_fallback_llm()
                 chain = prompt | llm | StrOutputParser()

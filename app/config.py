@@ -9,8 +9,9 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    OPENAI_API_KEY: str = "sk-placeholder"
+    OPENAI_API_KEY: str = ""
     GOOGLE_API_KEY: str = ""
+    CORS_ORIGINS: list[str] = ["*"]
     LANGSMITH_API_KEY: str = ""
     LANGSMITH_PROJECT: str = "aria-rag"
     LANGSMITH_TRACING: bool = False
