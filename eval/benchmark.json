@@ -1,0 +1,216 @@
+{
+  "version": "1.0",
+  "description": "ARIA RAG evaluation benchmark — 30 domain-agnostic Q&A pairs",
+  "pairs": [
+    {
+      "id": "q001",
+      "question": "What is retrieval-augmented generation (RAG)?",
+      "expected_answer": "RAG is a technique that combines a retrieval system with a generative language model. The retrieval component fetches relevant documents from a knowledge base, and those documents are passed as context to the LLM, which generates a grounded answer.",
+      "tags": ["rag", "fundamentals"],
+      "difficulty": "easy"
+    },
+    {
+      "id": "q002",
+      "question": "What is the purpose of vector embeddings in a RAG pipeline?",
+      "expected_answer": "Vector embeddings convert text into numerical representations that capture semantic meaning. In RAG, both documents and queries are embedded so that semantically similar content is close together in the vector space, enabling efficient similarity search.",
+      "tags": ["embeddings", "rag"],
+      "difficulty": "easy"
+    },
+    {
+      "id": "q003",
+      "question": "How does ChromaDB store and retrieve documents?",
+      "expected_answer": "ChromaDB stores documents alongside their vector embeddings in collections. On retrieval, it computes the cosine or L2 similarity between the query embedding and stored embeddings, returning the top-k most similar documents.",
+      "tags": ["chromadb", "vectorstore"],
+      "difficulty": "easy"
+    },
+    {
+      "id": "q004",
+      "question": "What is the difference between chunk_size and chunk_overlap in document splitting?",
+      "expected_answer": "chunk_size controls the maximum character (or token) length of each chunk. chunk_overlap specifies how many characters from the end of one chunk are repeated at the start of the next, preserving context across chunk boundaries.",
+      "tags": ["chunking", "ingestion"],
+      "difficulty": "easy"
+    },
+    {
+      "id": "q005",
+      "question": "What is YAML frontmatter in a Markdown document?",
+      "expected_answer": "YAML frontmatter is metadata placed at the very top of a Markdown file between triple-dash delimiters (---). It typically contains fields like title, date, author, or tags that describe the document.",
+      "tags": ["markdown", "ingestion"],
+      "difficulty": "easy"
+    },
+    {
+      "id": "q006",
+      "question": "Why is sentence-transformers used for embeddings instead of the OpenAI embeddings API?",
+      "expected_answer": "sentence-transformers runs locally, incurring no per-call API cost and adding no network latency. It also allows fine-tuning on domain-specific data to improve retrieval quality for specialised vocabularies.",
+      "tags": ["embeddings", "architecture"],
+      "difficulty": "medium"
+    },
+    {
+      "id": "q007",
+      "question": "How does LangChain's LCEL (LangChain Expression Language) compose a RAG chain?",
+      "expected_answer": "LCEL uses the pipe operator (|) to chain runnables. A typical RAG chain retrieves documents with a retriever, formats them, injects context into a prompt template, invokes the LLM, and parses the string output — all expressed as a single composable pipeline.",
+      "tags": ["langchain", "rag"],
+      "difficulty": "medium"
+    },
+    {
+      "id": "q008",
+      "question": "What is the role of LangSmith in an LLM application?",
+      "expected_answer": "LangSmith provides observability for LLM applications: it traces every chain invocation, records inputs, outputs, token usage, and latencies, and surfaces them in a dashboard for debugging, evaluation, and performance monitoring.",
+      "tags": ["langsmith", "observability"],
+      "difficulty": "easy"
+    },
+    {
+      "id": "q009",
+      "question": "What is the OpenAI gpt-4o-mini model optimised for?",
+      "expected_answer": "gpt-4o-mini is optimised for low cost and low latency while retaining strong instruction-following and reasoning abilities, making it well-suited for high-throughput production workloads where cost per token matters.",
+      "tags": ["openai", "llm"],
+      "difficulty": "easy"
+    },
+    {
+      "id": "q010",
+      "question": "What is Google Gemini Flash and when would it be used as a fallback?",
+      "expected_answer": "Gemini Flash is Google's fast, low-cost multimodal language model. It serves as a fallback when the primary OpenAI provider is unavailable or rate-limited, ensuring continued service availability.",
+      "tags": ["gemini", "llm", "fallback"],
+      "difficulty": "easy"
+    },
+    {
+      "id": "q011",
+      "question": "How does deduplication work during document ingestion?",
+      "expected_answer": "Before indexing, a SHA-256 hash of the document content is computed. If the same source+hash pair has already been ingested, the pipeline skips re-embedding and re-inserting the chunks, returning the existing count instead.",
+      "tags": ["ingestion", "deduplication"],
+      "difficulty": "medium"
+    },
+    {
+      "id": "q012",
+      "question": "What HTTP status code should an API return when a downstream LLM service is unavailable?",
+      "expected_answer": "502 Bad Gateway is the conventional code when the server received an invalid response from an upstream service. For LLM unavailability, 502 or 503 Service Unavailable are both appropriate depending on whether the failure is temporary.",
+      "tags": ["api", "http"],
+      "difficulty": "medium"
+    },
+    {
+      "id": "q013",
+      "question": "What does CORS middleware do in a FastAPI application?",
+      "expected_answer": "CORS middleware adds Access-Control-Allow-* headers to responses, allowing browsers to make cross-origin requests to the API. Without it, browsers block requests from a different origin than the server.",
+      "tags": ["fastapi", "cors"],
+      "difficulty": "easy"
+    },
+    {
+      "id": "q014",
+      "question": "Why use pydantic-settings for application configuration?",
+      "expected_answer": "pydantic-settings reads environment variables (and .env files) and validates them against a typed model, providing automatic type coercion, default values, and clear validation errors when required config is missing.",
+      "tags": ["config", "pydantic"],
+      "difficulty": "easy"
+    },
+    {
+      "id": "q015",
+      "question": "What is the difference between semantic search and keyword search?",
+      "expected_answer": "Keyword search matches exact or stemmed terms in documents. Semantic search uses vector embeddings to find documents that are conceptually similar to the query, even when they share no common words.",
+      "tags": ["search", "embeddings"],
+      "difficulty": "easy"
+    },
+    {
+      "id": "q016",
+      "question": "What is top-k in the context of vector retrieval?",
+      "expected_answer": "top-k is the number of most similar documents returned by the vector store for a given query. A larger k provides more context to the LLM but increases prompt length and cost.",
+      "tags": ["retrieval", "rag"],
+      "difficulty": "easy"
+    },
+    {
+      "id": "q017",
+      "question": "How does pytest-asyncio enable testing of async FastAPI endpoints?",
+      "expected_answer": "pytest-asyncio provides an event loop fixture and an async test runner that allows test functions declared with `async def` to be awaited properly. Combined with FastAPI's TestClient (or httpx.AsyncClient), it enables full integration testing of async routes.",
+      "tags": ["testing", "pytest"],
+      "difficulty": "medium"
+    },
+    {
+      "id": "q018",
+      "question": "What is the purpose of a system prompt in an LLM chat interaction?",
+      "expected_answer": "The system prompt sets the behaviour, persona, and constraints for the model before the user message. In RAG, it typically instructs the model to answer based only on the provided context and defines the response style.",
+      "tags": ["prompting", "llm"],
+      "difficulty": "easy"
+    },
+    {
+      "id": "q019",
+      "question": "What is model hallucination and how does RAG reduce it?",
+      "expected_answer": "Hallucination is when an LLM generates plausible-sounding but factually incorrect information. RAG reduces hallucination by grounding the model's response in retrieved documents that are explicitly provided as context, narrowing the space of valid answers.",
+      "tags": ["hallucination", "rag"],
+      "difficulty": "medium"
+    },
+    {
+      "id": "q020",
+      "question": "What is the lifespan context manager used for in FastAPI?",
+      "expected_answer": "The lifespan context manager (introduced in FastAPI 0.93) runs startup code before the app begins serving requests and teardown code after it stops. It replaces the older @app.on_event('startup') and @app.on_event('shutdown') decorators.",
+      "tags": ["fastapi", "lifecycle"],
+      "difficulty": "medium"
+    },
+    {
+      "id": "q021",
+      "question": "How should code blocks be handled when chunking Markdown documents?",
+      "expected_answer": "Code blocks should not be split mid-block, as partial code loses its meaning. A robust chunker protects fenced code blocks before splitting and restores them after, ensuring each chunk either contains a complete code block or none at all.",
+      "tags": ["markdown", "chunking"],
+      "difficulty": "medium"
+    },
+    {
+      "id": "q022",
+      "question": "What is the all-MiniLM-L6-v2 model?",
+      "expected_answer": "all-MiniLM-L6-v2 is a small, fast sentence-transformers model trained on over 1 billion sentence pairs. It produces 384-dimensional embeddings and offers a good balance of speed and semantic quality for retrieval tasks.",
+      "tags": ["embeddings", "models"],
+      "difficulty": "easy"
+    },
+    {
+      "id": "q023",
+      "question": "What information should a /health endpoint return?",
+      "expected_answer": "A health endpoint should return at minimum the service status (ok/degraded/down), the application version, and the readiness of critical dependencies such as the database or vector store. It is used by load balancers and orchestrators to route traffic.",
+      "tags": ["api", "health"],
+      "difficulty": "easy"
+    },
+    {
+      "id": "q024",
+      "question": "What metrics are useful to expose for a RAG service?",
+      "expected_answer": "Useful RAG metrics include total queries served, average query latency, fallback LLM invocation count, total indexed documents, and retrieval precision/recall from offline evaluation. These inform capacity planning and quality monitoring.",
+      "tags": ["metrics", "observability"],
+      "difficulty": "medium"
+    },
+    {
+      "id": "q025",
+      "question": "What is the difference between ChromaDB's in-memory client and PersistentClient?",
+      "expected_answer": "The in-memory client stores all data in RAM and loses it when the process exits — suitable for testing. PersistentClient writes collections and embeddings to disk, allowing data to survive restarts and accumulate over time.",
+      "tags": ["chromadb", "storage"],
+      "difficulty": "easy"
+    },
+    {
+      "id": "q026",
+      "question": "How does LangChain's ChatPromptTemplate differ from a plain PromptTemplate?",
+      "expected_answer": "PromptTemplate produces a single string prompt. ChatPromptTemplate formats a list of chat messages (system, human, assistant), matching the message-based input format expected by chat models like GPT-4 and Gemini.",
+      "tags": ["langchain", "prompting"],
+      "difficulty": "medium"
+    },
+    {
+      "id": "q027",
+      "question": "What does normalizing embeddings before storage improve?",
+      "expected_answer": "Normalising embeddings to unit length makes cosine similarity equivalent to dot product, which is faster to compute. It also ensures distance comparisons are not skewed by the magnitude of the embedding vector.",
+      "tags": ["embeddings", "performance"],
+      "difficulty": "hard"
+    },
+    {
+      "id": "q028",
+      "question": "Why is overlap important when chunking long documents?",
+      "expected_answer": "Without overlap, a sentence that crosses a chunk boundary may be split, making both halves harder to understand in isolation. Overlap repeats the tail of each chunk at the head of the next, preserving context for retrieval.",
+      "tags": ["chunking", "ingestion"],
+      "difficulty": "medium"
+    },
+    {
+      "id": "q029",
+      "question": "What is a Pydantic BaseModel and why is it used for API schemas?",
+      "expected_answer": "Pydantic's BaseModel provides automatic data validation and serialisation using Python type annotations. FastAPI uses it to validate request bodies and serialise response objects, generating OpenAPI documentation automatically from the same definitions.",
+      "tags": ["pydantic", "fastapi"],
+      "difficulty": "easy"
+    },
+    {
+      "id": "q030",
+      "question": "What is the purpose of externalising system prompts to a YAML file?",
+      "expected_answer": "Storing prompts in a versioned YAML file decouples prompt content from application code, enabling prompt iteration without code deployments. It also makes it easy to A/B test prompt variants and track changes via version control.",
+      "tags": ["prompting", "architecture"],
+      "difficulty": "medium"
+    }
+  ]
+}
