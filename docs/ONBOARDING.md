@@ -64,12 +64,26 @@ curl -X POST http://localhost:8000/query \
 ## Run Tests
 
 ```bash
+pip install -r requirements-dev.txt
 pytest tests/ -v
 ```
 
 ## Optional: Enable LangSmith Tracing
 
 Set `LANGSMITH_API_KEY` and `LANGSMITH_TRACING=true` in `.env`, then restart the server.
+
+## API Endpoints
+
+All endpoints are under the `/v1/` prefix.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/v1/ingest` | Ingest a markdown document |
+| `POST` | `/v1/query` | Query the knowledge base |
+| `GET` | `/v1/health` | Health check |
+| `GET` | `/v1/metrics` | Runtime metrics |
+
+Rate limits: `/v1/ingest` → 20 req/min per IP, `/v1/query` → 60 req/min per IP.
 
 ## Configuration Reference
 
@@ -78,9 +92,13 @@ Set `LANGSMITH_API_KEY` and `LANGSMITH_TRACING=true` in `.env`, then restart the
 | `OPENAI_API_KEY` | required | OpenAI API key |
 | `GOOGLE_API_KEY` | `""` | Google API key for Gemini fallback |
 | `LANGSMITH_API_KEY` | `""` | LangSmith tracing key |
+| `LANGSMITH_TRACING` | `false` | Enable LangSmith tracing (disable in prod for cost) |
 | `CHROMA_PERSIST_DIR` | `./chroma_db` | Vector store persistence path |
 | `EMBEDDING_MODEL` | `all-MiniLM-L6-v2` | sentence-transformers model name |
 | `LLM_MODEL` | `gpt-4o-mini` | Primary LLM model ID |
+| `FALLBACK_LLM_MODEL` | `gemini-1.5-flash` | Fallback LLM (requires GOOGLE_API_KEY) |
 | `CHUNK_SIZE` | `512` | Max characters per document chunk |
 | `CHUNK_OVERLAP` | `64` | Overlap between consecutive chunks |
 | `TOP_K` | `5` | Default number of retrieved documents |
+| `LOG_LEVEL` | `INFO` | Logging level (DEBUG/INFO/WARNING/ERROR) |
+| `CORS_ORIGINS` | `["*"]` | Allowed CORS origins — restrict in production |

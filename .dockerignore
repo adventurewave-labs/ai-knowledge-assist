@@ -1,0 +1,13 @@
+.git
+.env
+.venv
+*.pyc
+__pycache__
+chroma_db/
+tests/
+eval/
+docs/
+requirements-dev.txt
+*.md
+.gitignore
+.env.example

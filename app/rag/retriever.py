@@ -56,3 +56,9 @@ class VectorStoreRetriever:
             return len(results.get("ids", []))
         except Exception:
             return 0
+
+    def close(self) -> None:
+        try:
+            self._client.close()
+        except Exception:
+            pass

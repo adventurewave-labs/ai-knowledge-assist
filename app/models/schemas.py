@@ -1,15 +1,24 @@
+from typing import Optional
+
 from pydantic import BaseModel, Field
+
+_MAX_CONTENT_BYTES = 1_000_000  # 1 MB
+
+
+class ErrorResponse(BaseModel):
+    error_code: str
+    message: str
 
 
 class SourceDoc(BaseModel):
     content: str
     source: str
-    score: float
+    score: Optional[float] = None
 
 
 class IngestRequest(BaseModel):
-    content: str
-    source: str
+    content: str = Field(..., max_length=_MAX_CONTENT_BYTES)
+    source: str = Field(..., min_length=1, max_length=512)
     metadata: dict = Field(default_factory=dict)
 
 
@@ -20,7 +29,7 @@ class IngestResponse(BaseModel):
 
 
 class QueryRequest(BaseModel):
-    question: str
+    question: str = Field(..., min_length=1, max_length=4096)
     top_k: int = Field(default=5, gt=0, le=100)
     filters: dict = Field(default_factory=dict)
 
