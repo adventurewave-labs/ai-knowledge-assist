@@ -120,12 +120,14 @@ def mock_retriever(sample_documents):
 @pytest.fixture
 def test_client(mock_retriever):
     from app.ingestion.ingest import IngestPipeline
+    from app.models.schemas import IngestResponse
     from app.rag.chain import RAGChain
 
     mock_chain = MagicMock(spec=RAGChain)
     mock_chain.total_queries = 0
     mock_chain.avg_latency_ms = 0.0
     mock_chain.fallback_count = 0
+    mock_chain.last_model_used = "gpt-4o-mini"
     mock_chain.query.return_value = MagicMock(
         answer=MOCK_LLM_ANSWER,
         sources=[],
@@ -140,16 +142,16 @@ def test_client(mock_retriever):
     )
 
     mock_pipeline = MagicMock(spec=IngestPipeline)
-    mock_pipeline.ingest_document.return_value = MagicMock(
-        document_id="abc123",
-        chunks_created=3,
-        source="test.md",
-        model_dump=lambda: {
-            "document_id": "abc123",
-            "chunks_created": 3,
-            "source": "test.md",
-        },
-    )
+
+    def _ingest(content, source, metadata=None):
+        # Echo the requested source so endpoint tests reflect real behaviour.
+        return IngestResponse(
+            document_id="abc123",
+            chunks_created=3,
+            source=source,
+        )
+
+    mock_pipeline.ingest_document.side_effect = _ingest
 
     with patch("app.main.VectorStoreRetriever", return_value=mock_retriever), patch(
         "app.main.RAGChain", return_value=mock_chain

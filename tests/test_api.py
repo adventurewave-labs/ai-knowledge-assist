@@ -23,6 +23,12 @@ def test_metrics_returns_structure(test_client):
     assert "total_documents" in body
     assert "avg_latency_ms" in body
     assert "fallback_count" in body
+    assert "last_model_used" in body
+
+
+def test_metrics_reports_last_model_used(test_client):
+    resp = test_client.get("/metrics")
+    assert resp.json()["last_model_used"] == "gpt-4o-mini"
 
 
 def test_ingest_valid_document(test_client):

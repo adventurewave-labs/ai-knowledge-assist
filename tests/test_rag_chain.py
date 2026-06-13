@@ -128,3 +128,29 @@ def test_fallback_count_starts_zero(mock_retriever):
     with patch("app.rag.chain.get_system_prompt", return_value="ctx: {context}"):
         c = RAGChain(retriever=mock_retriever)
         assert c.fallback_count == 0
+
+
+def test_last_model_used_default(mock_retriever):
+    with patch("app.rag.chain.get_system_prompt", return_value="ctx: {context}"):
+        c = RAGChain(retriever=mock_retriever)
+        assert c.last_model_used == "gpt-4o-mini"
+
+
+def test_last_model_used_updated_on_query(mock_retriever):
+    with patch("app.rag.chain.get_system_prompt", return_value="ctx: {context}"), patch(
+        "app.rag.chain.ChatPromptTemplate"
+    ) as mock_pt, patch("app.rag.chain.get_primary_llm") as mock_primary, patch(
+        "app.rag.chain.StrOutputParser"
+    ):
+        prompt_instance = MagicMock()
+        mock_pt.from_messages.return_value = prompt_instance
+        composed = MagicMock()
+        composed.invoke.return_value = "Answer"
+        prompt_instance.__or__ = MagicMock(return_value=composed)
+        composed.__or__ = MagicMock(return_value=composed)
+        mock_primary.return_value = MagicMock()
+
+        c = RAGChain(retriever=mock_retriever)
+        c.build_chain()
+        c.query(question="Q1")
+        assert c.last_model_used == "gpt-4o-mini"

@@ -43,3 +43,4 @@ class MetricsResponse(BaseModel):
     total_documents: int
     avg_latency_ms: float
     fallback_count: int
+    last_model_used: str
