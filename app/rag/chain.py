@@ -5,10 +5,14 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 
+from app.config import settings
 from app.llm.providers import get_fallback_llm, get_primary_llm
+from app.logging_config import get_logger
 from app.models.schemas import QueryResponse, SourceDoc
 from app.rag.prompts import get_system_prompt
 from app.rag.retriever import VectorStoreRetriever
+
+logger = get_logger(__name__)
 
 
 def _format_docs(docs: list) -> str:
@@ -21,6 +25,7 @@ class RAGChain:
         self._total_queries = 0
         self._total_latency_ms = 0.0
         self._fallback_count = 0
+        self._last_model_used = settings.LLM_MODEL
         self._chain = None
 
     def build_chain(self, prompt_name: str = "default") -> None:
@@ -49,7 +54,7 @@ class RAGChain:
         filters: dict[str, Any] | None = None,
     ) -> QueryResponse:
         start = time.monotonic()
-        model_used = "gpt-4o-mini"
+        model_used = settings.LLM_MODEL
         answer = ""
 
         lc_retriever = self._retriever.get_retriever(top_k=top_k, filters=filters)
@@ -68,21 +73,38 @@ class RAGChain:
             llm = get_primary_llm()
             chain = prompt | llm | StrOutputParser()
             answer = chain.invoke({"context": context, "question": question})
+            model_used = settings.LLM_MODEL
         except Exception:
             try:
-                model_used = "gemini-1.5-flash"
+                model_used = settings.FALLBACK_LLM_MODEL
                 self._fallback_count += 1
                 llm = get_fallback_llm()
                 chain = prompt | llm | StrOutputParser()
                 answer = chain.invoke({"context": context, "question": question})
             except Exception as fallback_err:
+                logger.error(
+                    "query failed: both primary and fallback LLMs errored",
+                    extra={"event": "query_error", "question": question},
+                )
                 raise RuntimeError(
                     f"Both primary and fallback LLMs failed: {fallback_err}"
                 ) from fallback_err
 
+        self._last_model_used = model_used
         elapsed_ms = (time.monotonic() - start) * 1000
         self._total_queries += 1
         self._total_latency_ms += elapsed_ms
+
+        logger.info(
+            "query handled",
+            extra={
+                "event": "query",
+                "question": question,
+                "model_used": model_used,
+                "num_sources": len(source_docs_raw),
+                "latency_ms": round(elapsed_ms, 2),
+            },
+        )
 
         sources = [
             SourceDoc(
@@ -113,3 +135,7 @@ class RAGChain:
     @property
     def fallback_count(self) -> int:
         return self._fallback_count
+
+    @property
+    def last_model_used(self) -> str:
+        return self._last_model_used

@@ -6,8 +6,12 @@ from app.ingestion.ingest import IngestPipeline
 
 
 @pytest.fixture
-def pipeline(mock_retriever):
-    return IngestPipeline(retriever=mock_retriever)
+def pipeline(mock_retriever, tmp_path):
+    # Use a per-test dedup store so persistence does not leak across tests.
+    return IngestPipeline(
+        retriever=mock_retriever,
+        dedup_store_path=str(tmp_path / "dedup.json"),
+    )
 
 
 def test_ingest_returns_response(pipeline, sample_markdown_simple):
@@ -58,3 +62,32 @@ def test_ingest_with_frontmatter(pipeline, mock_retriever, sample_markdown_with_
         content=sample_markdown_with_frontmatter, source="fm.md"
     )
     assert resp.chunks_created >= 1
+
+
+def test_dedup_persists_across_restart(mock_retriever, tmp_path, sample_markdown_simple):
+    store = str(tmp_path / "dedup.json")
+
+    first = IngestPipeline(retriever=mock_retriever, dedup_store_path=store)
+    first.ingest_document(content=sample_markdown_simple, source="persist.md")
+    assert mock_retriever.add_documents.call_count == 1
+
+    # A fresh pipeline pointed at the same store should load prior dedup keys
+    # and skip re-ingesting identical content.
+    second = IngestPipeline(retriever=mock_retriever, dedup_store_path=store)
+    second.ingest_document(content=sample_markdown_simple, source="persist.md")
+    assert mock_retriever.add_documents.call_count == 1
+
+
+def test_dedup_store_file_written(mock_retriever, tmp_path, sample_markdown_simple):
+    store = tmp_path / "dedup.json"
+    pipe = IngestPipeline(retriever=mock_retriever, dedup_store_path=str(store))
+    pipe.ingest_document(content=sample_markdown_simple, source="written.md")
+    assert store.exists()
+
+
+def test_dedup_in_memory_when_no_store(mock_retriever, sample_markdown_simple):
+    # Empty path disables persistence; dedup still works within the instance.
+    pipe = IngestPipeline(retriever=mock_retriever, dedup_store_path="")
+    pipe.ingest_document(content=sample_markdown_simple, source="mem.md")
+    pipe.ingest_document(content=sample_markdown_simple, source="mem.md")
+    assert mock_retriever.add_documents.call_count == 1

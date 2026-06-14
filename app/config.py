@@ -22,5 +22,25 @@ class Settings(BaseSettings):
     CHUNK_OVERLAP: int = 64
     TOP_K: int = 5
 
+    # Comma-separated list of allowed CORS origins. Empty disables credentialed
+    # cross-origin access and falls back to a wildcard without credentials.
+    CORS_ORIGINS: str = ""
+
+    # API key required on protected endpoints via the X-API-Key header. When
+    # empty, authentication is disabled (suitable for local development/tests).
+    API_KEY: str = ""
+
+    # Path to the JSON file used to persist ingest deduplication keys across
+    # restarts. Set to an empty string to keep dedup state in memory only.
+    DEDUP_STORE_PATH: str = "./aria_dedup.json"
+
+    # Log level for the structured JSON logger configured at startup.
+    LOG_LEVEL: str = "INFO"
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        """Parse CORS_ORIGINS into a clean list of origins."""
+        return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
+
 
 settings = Settings()

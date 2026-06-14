@@ -65,7 +65,27 @@ LANGCHAIN_PROJECT=aria-knowledge-assistant
 # Server
 HOST=0.0.0.0
 PORT=8000
+
+# Production hardening
+CORS_ORIGINS=https://app.example.com,https://admin.example.com  # comma-separated allowlist; empty = wildcard without credentials
+API_KEY=your_api_key                                            # when set, required via the X-API-Key header; empty disables auth
+DEDUP_STORE_PATH=./aria_dedup.json                              # persists ingest dedup keys across restarts; empty = in-memory only
+LOG_LEVEL=INFO                                                  # structured JSON logging level
 ```
+
+### Security & Operations
+
+- **CORS**: Cross-origin access is controlled by `CORS_ORIGINS`. Credentialed
+  requests are only permitted when origins are explicitly listed; an empty value
+  falls back to a wildcard origin **without** credentials.
+- **Authentication**: Setting `API_KEY` enables API-key auth on `/ingest`,
+  `/query`, and `/metrics`. Clients must send the key in the `X-API-Key` header.
+  `/health` is always public for load-balancer probes.
+- **Structured logging**: Logs are emitted as single-line JSON to stdout,
+  including per-request `method`/`path`/`status`/`latency_ms` and structured
+  ingest/query events.
+- **Ingest deduplication**: Identical `source` + content is only ingested once;
+  the dedup index is persisted to `DEDUP_STORE_PATH` so it survives restarts.
 
 ### Prompts Configuration
 Edit `config/prompts.yaml` to customize system prompts and behavior templates.
@@ -88,18 +108,21 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
 curl http://localhost:8000/health
 ```
 
+> When `API_KEY` is configured, add `-H "X-API-Key: your_api_key"` to the
+> `/ingest`, `/query`, and `/metrics` requests below.
+
 #### Ingest Documents
 ```bash
 curl -X POST http://localhost:8000/ingest \
   -H "Content-Type: application/json" \
-  -d '{"file_path": "path/to/document.md"}'
+  -d '{"content": "# Title\n\nBody text.", "source": "document.md"}'
 ```
 
 #### Query Knowledge Base
 ```bash
 curl -X POST http://localhost:8000/query \
   -H "Content-Type: application/json" \
-  -d '{"question": "What is the main topic?", "provider": "openai"}'
+  -d '{"question": "What is the main topic?", "top_k": 5}'
 ```
 
 ## 🏗️ Project Structure

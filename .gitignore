@@ -53,6 +53,9 @@ htmlcov/
 # ChromaDB
 chroma_db/
 
+# Ingest dedup store
+aria_dedup.json
+
 # Jupyter
 .ipynb_checkpoints/
 
