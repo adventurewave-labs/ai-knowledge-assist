@@ -64,6 +64,22 @@ The table above lists supported formats.
 MOCK_LLM_ANSWER = "This is a mocked LLM answer for testing purposes."
 
 
+@pytest.fixture(autouse=True)
+def _reset_rate_limiter():
+    """Clear rate-limit counters before each test so buckets don't leak.
+
+    The limiter is a module-level singleton shared across the whole session;
+    without this the IP-keyed bucket would accumulate across tests.
+    """
+    try:
+        from app.rate_limit import limiter
+
+        limiter.reset()
+    except Exception:
+        pass
+    yield
+
+
 @pytest.fixture
 def sample_markdown_simple() -> str:
     return SAMPLE_MARKDOWN_SIMPLE

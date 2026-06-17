@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ARIA — AI Knowledge Assist</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --panel: #161b22;
+      --border: #30363d;
+      --text: #c9d1d9;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --accent-dim: #1f6feb;
+      --success: #3fb950;
+      --error: #f85149;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel);
+    }
+    .logo {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      color: var(--accent);
+    }
+    .subtitle { color: var(--muted); font-size: 14px; }
+    .badge {
+      margin-left: auto;
+      background: var(--accent-dim);
+      color: #fff;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 60% 40%;
+      gap: 1px;
+      background: var(--border);
+      min-height: 0;
+    }
+    .panel {
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      padding: 16px;
+    }
+    .panel h2 {
+      margin: 0 0 12px;
+      font-size: 15px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+    }
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      background: var(--panel);
+      margin-bottom: 12px;
+    }
+    .msg { margin-bottom: 16px; }
+    .msg .role {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+    .msg.user .role { color: var(--muted); }
+    .msg pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-family: inherit;
+      line-height: 1.5;
+    }
+    .done {
+      color: var(--success);
+      font-size: 12px;
+      margin-top: 6px;
+      font-weight: 600;
+    }
+    .row { display: flex; gap: 8px; }
+    input, textarea, button {
+      font-family: inherit;
+      font-size: 14px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--text);
+      padding: 9px 11px;
+    }
+    input:focus, textarea:focus { outline: none; border-color: var(--accent); }
+    input[type="text"] { flex: 1; }
+    textarea { width: 100%; resize: vertical; }
+    button {
+      background: var(--accent-dim);
+      border-color: var(--accent-dim);
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover { background: var(--accent); border-color: var(--accent); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .field { margin-bottom: 10px; }
+    label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    .apikey-row { margin-bottom: 10px; }
+    #ingestStatus { margin-top: 10px; font-size: 13px; min-height: 18px; }
+    #ingestStatus.success { color: var(--success); }
+    #ingestStatus.error { color: var(--error); }
+    @media (max-width: 768px) {
+      main { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <span class="logo">ARIA</span>
+    <span class="subtitle">AI Knowledge Assist</span>
+    <span class="badge">v0.2.0</span>
+  </header>
+
+  <main>
+    <!-- Chat panel -->
+    <section class="panel" id="chatPanel">
+      <h2>Chat</h2>
+      <div class="apikey-row">
+        <label for="apiKey">X-API-Key (kept in memory only)</label>
+        <input type="password" id="apiKey" placeholder="Optional API key" autocomplete="off" />
+      </div>
+      <div id="messages"></div>
+      <div class="row">
+        <input type="text" id="question" placeholder="Ask a question..." autocomplete="off" />
+        <button id="sendBtn">Send</button>
+      </div>
+    </section>
+
+    <!-- Ingest panel -->
+    <section class="panel" id="ingestPanel">
+      <h2>Ingest</h2>
+      <div class="field">
+        <label for="sourceName">Source name</label>
+        <input type="text" id="sourceName" placeholder="e.g. handbook.md" autocomplete="off" />
+      </div>
+      <div class="field" style="flex:1; display:flex; flex-direction:column;">
+        <label for="ingestContent">Markdown content</label>
+        <textarea id="ingestContent" rows="12" placeholder="# Paste markdown here..."></textarea>
+      </div>
+      <button id="ingestBtn">Ingest</button>
+      <div id="ingestStatus"></div>
+    </section>
+  </main>
+
+  <script>
+    // API key is stored in memory only — never written to browser storage.
+    const apiKeyInput = document.getElementById("apiKey");
+    function authHeaders(extra) {
+      const h = Object.assign({}, extra || {});
+      const key = apiKeyInput.value.trim();
+      if (key) h["X-API-Key"] = key;
+      return h;
+    }
+
+    const messages = document.getElementById("messages");
+    const questionInput = document.getElementById("question");
+    const sendBtn = document.getElementById("sendBtn");
+
+    function addMessage(role, roleLabel) {
+      const wrap = document.createElement("div");
+      wrap.className = "msg " + role;
+      const r = document.createElement("div");
+      r.className = "role";
+      r.textContent = roleLabel;
+      const pre = document.createElement("pre");
+      wrap.appendChild(r);
+      wrap.appendChild(pre);
+      messages.appendChild(wrap);
+      messages.scrollTop = messages.scrollHeight;
+      return { wrap, pre };
+    }
+
+    function sendQuestion() {
+      const q = questionInput.value.trim();
+      if (!q) return;
+      addMessage("user", "You").pre.textContent = q;
+      questionInput.value = "";
+      sendBtn.disabled = true;
+
+      const answer = addMessage("assistant", "ARIA");
+
+      // EventSource cannot set custom headers, so pass the API key as a query
+      // param when present; the token streams in character-by-character.
+      const params = new URLSearchParams({ q });
+      const key = apiKeyInput.value.trim();
+      if (key) params.set("api_key", key);
+      const es = new EventSource("/query/stream?" + params.toString());
+
+      es.onmessage = function (event) {
+        if (event.data === "[DONE]") {
+          es.close();
+          sendBtn.disabled = false;
+          const done = document.createElement("div");
+          done.className = "done";
+          done.textContent = "[DONE]";
+          answer.wrap.appendChild(done);
+          messages.scrollTop = messages.scrollHeight;
+          return;
+        }
+        answer.pre.textContent += event.data;
+        messages.scrollTop = messages.scrollHeight;
+      };
+
+      es.onerror = function () {
+        es.close();
+        sendBtn.disabled = false;
+        if (!answer.pre.textContent) {
+          answer.pre.textContent = "[connection error]";
+        }
+      };
+    }
+
+    sendBtn.addEventListener("click", sendQuestion);
+    questionInput.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") sendQuestion();
+    });
+
+    // Ingest panel
+    const ingestBtn = document.getElementById("ingestBtn");
+    const ingestStatus = document.getElementById("ingestStatus");
+
+    async function getDocCount() {
+      try {
+        const res = await fetch("/metrics", { headers: authHeaders() });
+        if (!res.ok) return null;
+        const body = await res.json();
+        return body.total_documents;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    ingestBtn.addEventListener("click", async function () {
+      const content = document.getElementById("ingestContent").value.trim();
+      const source = document.getElementById("sourceName").value.trim();
+      if (!content || !source) {
+        ingestStatus.className = "error";
+        ingestStatus.textContent = "Source name and content are required.";
+        return;
+      }
+      ingestBtn.disabled = true;
+      ingestStatus.className = "";
+      ingestStatus.textContent = "Ingesting...";
+      try {
+        const res = await fetch("/ingest", {
+          method: "POST",
+          headers: authHeaders({ "Content-Type": "application/json" }),
+          body: JSON.stringify({ content, source }),
+        });
+        if (!res.ok) {
+          const detail = await res.text();
+          throw new Error("HTTP " + res.status + ": " + detail);
+        }
+        const body = await res.json();
+        const count = await getDocCount();
+        ingestStatus.className = "success";
+        ingestStatus.textContent =
+          "Ingested " + body.chunks_created + " chunk(s) from '" + body.source + "'." +
+          (count !== null ? " Total documents: " + count + "." : "");
+      } catch (err) {
+        ingestStatus.className = "error";
+        ingestStatus.textContent = "Error: " + err.message;
+      } finally {
+        ingestBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

@@ -37,6 +37,15 @@ class Settings(BaseSettings):
     # Log level for the structured JSON logger configured at startup.
     LOG_LEVEL: str = "INFO"
 
+    # Requests/minute allowed per client (keyed by X-API-Key header when
+    # present, otherwise the client IP) on the /query and /query/stream
+    # endpoints. Health and metrics endpoints are exempt.
+    RATE_LIMIT_RPM: int = 60
+
+    # Maximum time (seconds) to wait for the streaming LLM to finish before the
+    # SSE generator gives up.
+    STREAM_TIMEOUT_S: int = 60
+
     @property
     def cors_origins_list(self) -> list[str]:
         """Parse CORS_ORIGINS into a clean list of origins."""
