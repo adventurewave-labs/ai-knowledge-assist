@@ -4,6 +4,9 @@ from typing import Any
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
+from slowapi.errors import RateLimitExceeded
 
 from app.auth import require_api_key
 from app.config import settings
@@ -19,6 +22,11 @@ from app.models.schemas import (
 )
 from app.rag.chain import RAGChain
 from app.rag.retriever import VectorStoreRetriever
+from app.rate_limit import (
+    limiter,
+    rate_limit_exceeded_handler,
+    rate_limit_value,
+)
 
 _state: dict[str, Any] = {}
 
@@ -49,9 +57,17 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Project ARIA",
     description="RAG-powered knowledge assistant",
-    version="0.1.1",
+    version="0.2.0",
     lifespan=lifespan,
 )
+
+# Rate limiting (ADR-002). slowapi reads the limiter from app.state and uses
+# the registered handler to render 429 responses.
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+
+# Serve the single-file web UI (ADR-004).
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 # B1: configurable CORS. Only enable credentialed access when origins are
 # explicitly configured; otherwise fall back to a wildcard without credentials
@@ -109,15 +125,16 @@ async def ingest_document(request: IngestRequest) -> IngestResponse:
 
 
 @app.post("/query", response_model=QueryResponse, dependencies=[Depends(require_api_key)])
-async def query(request: QueryRequest) -> QueryResponse:
+@limiter.limit(rate_limit_value)
+async def query(request: Request, payload: QueryRequest) -> QueryResponse:
     chain: RAGChain = _state.get("chain")
     if chain is None:
         raise HTTPException(status_code=503, detail="Service not ready")
     try:
         return chain.query(
-            question=request.question,
-            top_k=request.top_k,
-            filters=request.filters if request.filters else None,
+            question=payload.question,
+            top_k=payload.top_k,
+            filters=payload.filters if payload.filters else None,
         )
     except RuntimeError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
@@ -125,12 +142,51 @@ async def query(request: QueryRequest) -> QueryResponse:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
+@app.get("/query/stream", dependencies=[Depends(require_api_key)])
+@limiter.limit(rate_limit_value)
+async def query_stream(request: Request, q: str) -> StreamingResponse:
+    """Stream an answer as Server-Sent Events (ADR-001).
+
+    Emits ``data: <token>\\n\\n`` per chunk and a terminal ``data: [DONE]\\n\\n``.
+    """
+    chain: RAGChain = _state.get("chain")
+    if chain is None:
+        raise HTTPException(status_code=503, detail="Service not ready")
+
+    async def event_generator():
+        try:
+            async for token in chain.astream(q):
+                yield f"data: {token}\n\n"
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.error(
+                "stream endpoint error",
+                extra={"event": "stream_endpoint_error", "error": str(exc)},
+            )
+            yield f"data: [error] {exc}\n\n"
+        finally:
+            yield "data: [DONE]\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+@app.get("/")
+async def root() -> FileResponse:
+    return FileResponse("app/static/index.html")
+
+
 @app.get("/health", response_model=HealthResponse)
 async def health() -> HealthResponse:
     retriever: VectorStoreRetriever | None = _state.get("retriever")
     return HealthResponse(
         status="ok",
-        version="0.1.1",
+        version="0.2.0",
         vectorstore_ready=retriever is not None and retriever.is_ready,
     )
 

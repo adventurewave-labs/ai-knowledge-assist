@@ -181,6 +181,17 @@ class MarkdownParser:
 
         for sentence in sentences:
             sentence_len = len(sentence)
+            # A single sentence can still exceed chunk_size (e.g. text without
+            # sentence-ending punctuation). Fall back to a word-level split so
+            # no chunk ever blows past the configured chunk_size.
+            if sentence_len > self.chunk_size:
+                if current_parts:
+                    chunks.append(" ".join(current_parts))
+                    current_parts = []
+                    current_len = 0
+                chunks.extend(self._split_by_words(sentence))
+                continue
+
             if current_len + sentence_len + 1 <= self.chunk_size:
                 current_parts.append(sentence)
                 current_len += sentence_len + 1
@@ -194,3 +205,33 @@ class MarkdownParser:
             chunks.append(" ".join(current_parts))
 
         return chunks if chunks else [text]
+
+    def _split_by_words(self, text: str) -> list[str]:
+        """Hard-split an oversized run of text on word boundaries.
+
+        Used as a last resort when a single "sentence" has no punctuation to
+        break on. Guarantees each emitted chunk stays within chunk_size.
+        """
+        words = text.split()
+        if not words:
+            return [text]
+
+        chunks: list[str] = []
+        current_parts: list[str] = []
+        current_len = 0
+
+        for word in words:
+            # +1 accounts for the joining space between words.
+            extra = len(word) + (1 if current_parts else 0)
+            if current_parts and current_len + extra > self.chunk_size:
+                chunks.append(" ".join(current_parts))
+                current_parts = [word]
+                current_len = len(word)
+            else:
+                current_parts.append(word)
+                current_len += extra
+
+        if current_parts:
+            chunks.append(" ".join(current_parts))
+
+        return chunks
