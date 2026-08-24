@@ -6,7 +6,7 @@
 
 ARIA (Advanced Retrieval-Augmented Intelligence Assistant) is a sophisticated knowledge management system that combines:
 - **RAG (Retrieval-Augmented Generation)** for accurate, context-aware responses
-- **Multi-format document ingestion** (Markdown, text, PDF support)
+- **Multi-format document ingestion** (Markdown, text)
 - **Intelligent semantic search** using sentence transformers
 - **Multiple LLM provider support** (OpenAI, Google Gemini, Community models)
 - **FastAPI-based REST API** for seamless integration
@@ -34,7 +34,7 @@ ARIA (Advanced Retrieval-Augmented Intelligence Assistant) is a sophisticated kn
 
 ```bash
 # Clone the repository
-git clone https://github.com/marcuspat/ai-knowledge-assist.git
+git clone https://github.com/adventurewave-labs/ai-knowledge-assist.git
 cd ai-knowledge-assist
 
 # Create virtual environment
