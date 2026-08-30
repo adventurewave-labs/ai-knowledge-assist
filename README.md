@@ -196,7 +196,7 @@ Contributions are welcome! Please ensure:
 
 ## 📝 License
 
-This project is part of the ARIA knowledge management system.
+MIT — see [LICENSE](LICENSE).
 
 ## 🙏 Acknowledgments
 
