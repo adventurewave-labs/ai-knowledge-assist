@@ -156,7 +156,7 @@ pytest
 pytest --cov=app
 
 # Run specific test
-pytest tests/test_ingestion.py
+pytest tests/test_rag_chain.py
 
 # Async tests (automatic asyncio mode)
 pytest tests/test_rag_chain.py
