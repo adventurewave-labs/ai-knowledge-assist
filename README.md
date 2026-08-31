@@ -34,7 +34,7 @@ ARIA (Advanced Retrieval-Augmented Intelligence Assistant) is a sophisticated kn
 
 ```bash
 # Clone the repository
-git clone https://github.com/adventurewave-labs/ai-knowledge-assist.git
+git clone https://github.com/adventurewave-labs/aria.git
 cd ai-knowledge-assist
 
 # Create virtual environment
