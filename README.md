@@ -35,7 +35,7 @@ ARIA (Advanced Retrieval-Augmented Intelligence Assistant) is a sophisticated kn
 ```bash
 # Clone the repository
 git clone https://github.com/adventurewave-labs/aria.git
-cd ai-knowledge-assist
+cd aria
 
 # Create virtual environment
 python3.11 -m venv venv
@@ -128,7 +128,7 @@ curl -X POST http://localhost:8000/query \
 ## 🏗️ Project Structure
 
 ```
-ai-knowledge-assist/
+aria/
 ├── app/
 │   ├── ingestion/          # Document processing and parsing
 │   ├── llm/               # LLM provider integrations
@@ -182,7 +182,7 @@ pytest tests/test_rag_chain.py
 ## 📊 Performance
 
 - **Fast Ingestion**: Optimized document processing pipeline
-- **Semantic Search**: Sub-second retrieval with ChromaDB
+- **Semantic Search**: RAG retrieval via ChromaDB (no formal benchmarks yet)
 - **Scalable Architecture**: Async support for high-concurrency scenarios
 - **Efficient Storage**: Vector database for compact knowledge representation
 
